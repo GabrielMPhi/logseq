@@ -1455,7 +1455,7 @@
 
 (defn collapsed?
   [block]
-  (:block/collapsed? block)))
+  (:block/collapsed? block))
 
 ;; https://stackoverflow.com/questions/32511405/how-would-time-ago-function-implementation-look-like-in-clojure
 #?(:cljs
