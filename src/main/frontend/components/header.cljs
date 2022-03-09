@@ -89,7 +89,7 @@
            graph-txid-exists?
            (concat
             [{:title "toggle file sync"
-              :options {:on-click #(if not-syncing? (fs-sync/sync-start) (fs-sync/sync-stop))} }]
+              :options {:on-click #(if not-syncing? (fs-sync/sync-start) (fs-sync/sync-stop))}}]
             [{:hr true}]
             (map (fn [f] {:title f
                           :icon (ui/icon "arrow-narrow-up")}) uploading-files)
@@ -185,17 +185,17 @@
   [t]
   (let [[downloaded, set-downloaded] (rum/use-state nil)
         _ (rum/use-effect!
-            (fn []
-              (when-let [channel (and (util/electron?) "auto-updater-downloaded")]
-                (let [callback (fn [_ args]
-                                 (js/console.debug "[new-version downloaded] args:" args)
-                                 (let [args (bean/->clj args)]
-                                   (set-downloaded args)
-                                   (state/set-state! :electron/auto-updater-downloaded args))
-                                 nil)]
-                  (js/apis.addListener channel callback)
-                  #(js/apis.removeListener channel callback))))
-            [])]
+           (fn []
+             (when-let [channel (and (util/electron?) "auto-updater-downloaded")]
+               (let [callback (fn [_ args]
+                                (js/console.debug "[new-version downloaded] args:" args)
+                                (let [args (bean/->clj args)]
+                                  (set-downloaded args)
+                                  (state/set-state! :electron/auto-updater-downloaded args))
+                                nil)]
+                 (js/apis.addListener channel callback)
+                 #(js/apis.removeListener channel callback))))
+           [])]
 
     (when downloaded
       [:div.cp__header-tips
@@ -217,77 +217,66 @@
                                (not config/publishing?))
         refreshing? (state/sub :nfs/refreshing?)]
     [:div.cp__header#head
-       {:class           (util/classnames [{:electron-mac   electron-mac?
-                                            :native-ios     (mobile-util/native-ios?)
-                                            :native-android (mobile-util/native-android?)}])
-        :on-double-click (fn [^js e]
-                           (when-let [target (.-target e)]
-                             (when (and (util/electron?)
-                                        (.. target -classList (contains "cp__header")))
-                               (js/window.apis.toggleMaxOrMinActiveWindow))))
-        :style           {:fontSize  50
-                          :transform (str "translateY(" (or (:offset-top vw-state) 0) "px)")}}
-       [:div.l.flex
-        (left-menu-button {:on-click (fn []
-                                       (open-fn)
-                                       (state/set-left-sidebar-open!
-                                        (not (:ui/left-sidebar-open? @state/state))))})
+     {:class           (util/classnames [{:electron-mac   electron-mac?
+                                          :native-ios     (mobile-util/native-ios?)
+                                          :native-android (mobile-util/native-android?)}])
+      :on-double-click (fn [^js e]
+                         (when-let [target (.-target e)]
+                           (when (and (util/electron?)
+                                      (.. target -classList (contains "cp__header")))
+                             (js/window.apis.toggleMaxOrMinActiveWindow))))
+      :style           {:fontSize  50
+                        :transform (str "translateY(" (or (:offset-top vw-state) 0) "px)")}}
+     [:div.l.flex
+      (left-menu-button {:on-click (fn []
+                                     (open-fn)
+                                     (state/set-left-sidebar-open!
+                                      (not (:ui/left-sidebar-open? @state/state))))})
 
-        (when current-repo ;; this is for the Search button
-          (ui/with-shortcut :go/search "right"
-            [:a.button#search-button
-             {:on-click #(do (when (or (mobile-util/native-android?)
-                                       (mobile-util/native-iphone?))
-                               (state/set-left-sidebar-open! false))
-                             (state/pub-event! [:go/search]))}
-             (ui/icon "search" {:style {:fontSize ui/icon-size}})]))]
+      (when current-repo ;; this is for the Search button
+        (ui/with-shortcut :go/search "right"
+          [:a.button#search-button
+           {:on-click #(do (when (or (mobile-util/native-android?)
+                                     (mobile-util/native-iphone?))
+                             (state/set-left-sidebar-open! false))
+                           (state/pub-event! [:go/search]))}
+           (ui/icon "search" {:style {:fontSize ui/icon-size}})]))]
 
-       [:div.r.flex
-        (when-not file-sync-handler/hiding-login&file-sync
-          (file-sync))
-        (when-not file-sync-handler/hiding-login&file-sync
-          (login))
-        (when plugin-handler/lsp-enabled?
-          (plugins/hook-ui-items :toolbar))
+     [:div.r.flex
+      (when-not file-sync-handler/hiding-login&file-sync
+        (file-sync))
+      (when-not file-sync-handler/hiding-login&file-sync
+        (login))
+      (when plugin-handler/lsp-enabled?
+        (plugins/hook-ui-items :toolbar))
 
-        (when (not= (state/get-current-route) :home)
-          (home-button))
+      (when (not= (state/get-current-route) :home)
+        (home-button))
 
-        (when (or (util/electron?)
-                  (mobile-util/native-ios?))
-          (back-and-forward))
+      (when (or (util/electron?)
+                (mobile-util/native-ios?))
+        (back-and-forward))
 
-        (new-block-mode)
+      (new-block-mode)
 
-        (when (and (mobile-util/is-native-platform?) (seq repos))
-          [:a.text-sm.font-medium.button
-           {:on-click
-            (fn []
-              (state/pub-event!
-               [:modal/show
-                [:div {:style {:max-width 700}}
-                 [:p "Refresh detects and processes files modified on your disk and diverged from the actual Logseq page content. Continue?"]
-                 (ui/button
-                  "Yes"
-                  :on-click (fn []
-                              (state/close-modal!)
-                              (nfs/refresh! (state/get-current-repo) repo/refresh-cb)))]]))}
-           (if refreshing?
-             [:div {:class "animate-spin-reverse"}
-              svg/refresh]
-             [:div.flex.flex-row.text-center.open-button__inner.items-center
-              (ui/icon "refresh" {:style {:fontSize ui/icon-size}})])])
-
-        (repo/sync-status current-repo)
-
-        (when show-open-folder?
-          [:a.text-sm.font-medium.button
-           {:on-click #(page-handler/ls-dir-files! shortcut/refresh!)}
+      (when (and (mobile-util/is-native-platform?) (seq repos))
+        [:a.text-sm.font-medium.button
+         {:on-click
+          (fn []
+            (state/pub-event!
+             [:modal/show
+              [:div {:style {:max-width 700}}
+               [:p "Refresh detects and processes files modified on your disk and diverged from the actual Logseq page content. Continue?"]
+               (ui/button
+                "Yes"
+                :on-click (fn []
+                            (state/close-modal!)
+                            (nfs/refresh! (state/get-current-repo) repo/refresh-cb)))]]))}
+         (if refreshing?
+           [:div {:class "animate-spin-reverse"}
+            svg/refresh]
            [:div.flex.flex-row.text-center.open-button__inner.items-center
-            (ui/icon "folder-plus")
-            (when-not config/mobile?
-              [:span.ml-1 {:style {:margin-top (if electron-mac? 0 2)}}
-               (t :open)])]])
+            (ui/icon "refresh" {:style {:fontSize ui/icon-size}})])])
 
       (repo/sync-status current-repo)
 
